@@ -1,5 +1,3 @@
-const path = require('path')
-
 const express = require('express')
 
 const { config, engine } = require('express-edge')
@@ -15,11 +13,16 @@ mongoose.set('useNewUrlParser', true)
 mongoose.set('useUnifiedTopology', true)
 mongoose.connect('mongodb://localhost/web-app')
 
-const Post = require('./database/models/Post')
+
+// Controllers
+const createPostController = require('./controllers/createPost')
+const homePageController = require('./controllers/homePage')
+const storePostController = require('./controllers/storePost')
+const getPostController = require('./controllers/getPost')
 
 const app = express()
 
-
+// EDGE TEMPLATING ENGINE
 config({ cache: process.env.NODE_ENV === 'production'})
 app.use(engine)
 
@@ -47,45 +50,14 @@ const validateCreatePostMiddleware = (req, res, next) => {
 app.use('/posts/store', validateCreatePostMiddleware)
 
 
-app.get('/', async (req, res) => {
+app.get('/', homePageController)
 
-    const posts = await Post.find({})
+app.get('/posts/new', createPostController)
 
-    res.render('home', {
+app.post('/posts/store', storePostController)
 
-        posts
+app.get('/post/:id', getPostController)
 
-    })
-})
-
-app.get('/posts/new', (req, res) => {
-
-    res.render('create')
-})
-
-app.post('/posts/store', (req, res) => {
-
-    const { image } = req.files
-
-    image.mv(path.resolve(__dirname, 'public/posts', image.name), (error) => {
-
-        Post.create({...req.body, image: `/posts/${image.name}`}, (error, post) => {
-
-            res.redirect('/')
-        })
-    })
-})
-
-app.get('/post/:id', async (req, res) => {
-
-    const post = await Post.findById(req.params.id)
-
-    res.render('post', {
-
-        post
-
-    })
-})
 
 app.get('/about', (req, res) => {
 

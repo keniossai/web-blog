@@ -6,11 +6,14 @@ const bodyParser = require('body-parser')
 
 const fileUpload = require('express-fileupload')
 
+const expressSession = require('express-session')
+
 const mongoose = require('mongoose')
 
 
 mongoose.set('useNewUrlParser', true)
 mongoose.set('useUnifiedTopology', true)
+mongoose.set('useCreateIndex', true)
 mongoose.connect('mongodb://localhost/web-app')
 
 
@@ -19,8 +22,21 @@ const createPostController = require('./controllers/createPost')
 const homePageController = require('./controllers/homePage')
 const storePostController = require('./controllers/storePost')
 const getPostController = require('./controllers/getPost')
+const createUserController = require('./controllers/createUser')
+const storeUserController = require('./controllers/storeUser')
+const loginController = require('./controllers/login')
+const loginUserController = require('./controllers/loginUser')
+
 
 const app = express()
+
+// EXPRESS SESSION
+
+app.use(expressSession({
+
+    secret: 'secret'
+    
+}))
 
 // EDGE TEMPLATING ENGINE
 config({ cache: process.env.NODE_ENV === 'production'})
@@ -36,18 +52,10 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 
 
-const validateCreatePostMiddleware = (req, res, next) => {
-
-    if(!(req.files && req.files.image) || !req.body.username || !req.body.title || !req.body.subtitle || !req.body.content){
-
-        return res.redirect('/posts/new')
-    }
-
-    next()
-}
+const storePost = require('./middleware/storePost')
+app.use('/posts/store', storePost)
 
 
-app.use('/posts/store', validateCreatePostMiddleware)
 
 
 app.get('/', homePageController)
@@ -58,16 +66,16 @@ app.post('/posts/store', storePostController)
 
 app.get('/post/:id', getPostController)
 
+app.get('/auth/register', createUserController)
 
-app.get('/about', (req, res) => {
+app.post('/users/register', storeUserController)
 
-    res.render('about')
-})
+app.get('/auth/login', loginController)
 
-app.get('/contact', (req, res) => {
+app.post('/user/login', loginUserController)
 
-    res.render('contact')
-})
+
+
 
 app.listen(4000, () => {
 
